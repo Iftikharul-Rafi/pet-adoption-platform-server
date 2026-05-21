@@ -67,3 +67,5 @@ const Adoption = mongoose.model(
 );
 
 export default Adoption;
+
+..
