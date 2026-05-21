@@ -263,5 +263,3 @@ export const deletePet = async (req, res) => {
   }
 
 };
-
-..
