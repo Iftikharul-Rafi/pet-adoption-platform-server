@@ -1,20 +1,13 @@
 import bcrypt from "bcrypt";
-
 import jwt from "jsonwebtoken";
-
 import User from "../models/userModel.js";
-
-
-
 
 // ===============================
 // REGISTER USER
 // ===============================
 export const registerUser = async (req, res) => {
-
   try {
 
-    // frontend থেকে data নিচ্ছি
     const {
       name,
       email,
@@ -22,67 +15,28 @@ export const registerUser = async (req, res) => {
       photoURL,
     } = req.body;
 
-
-
-
-
-    // ===============================
-    // VALIDATION
-    // ===============================
+    // validation
     if (!name || !email || !password) {
-
       return res.status(400).json({
         success: false,
         message: "All fields are required",
       });
-
     }
 
-
-
-
-
-
-    // ===============================
-    // EMAIL EXISTS CHECK
-    // ===============================
-    const existingUser =
-      await User.findOne({ email });
-
-
-
+    // email exists check
+    const existingUser = await User.findOne({ email });
 
     if (existingUser) {
-
       return res.status(400).json({
         success: false,
         message: "User already exists",
       });
-
     }
 
+    // password hash
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-
-
-
-
-
-    // ===============================
-    // PASSWORD HASH
-    // ===============================
-    const hashedPassword =
-      await bcrypt.hash(password, 10);
-
-
-
-
-
-
-
-
-    // ===============================
-    // CREATE USER
-    // ===============================
+    // create user
     const newUser = new User({
       name,
       email,
@@ -90,28 +44,10 @@ export const registerUser = async (req, res) => {
       photoURL,
     });
 
-
-
-
-
-
-
-
-    // ===============================
-    // SAVE USER
-    // ===============================
+    // save user
     await newUser.save();
 
-
-
-
-
-
-
-
-    // ===============================
-    // RESPONSE
-    // ===============================
+    // response
     res.status(201).json({
       success: true,
       message: "User registered successfully",
@@ -125,24 +61,12 @@ export const registerUser = async (req, res) => {
     });
 
   }
-
 };
-
-
-
-
-
-
-
-
-
-
 
 // ===============================
 // LOGIN USER
 // ===============================
 export const loginUser = async (req, res) => {
-
   try {
 
     const {
@@ -150,161 +74,78 @@ export const loginUser = async (req, res) => {
       password,
     } = req.body;
 
-
-
-
-
-
-    // ===============================
-    // VALIDATION
-    // ===============================
+    // validation
     if (!email || !password) {
-
       return res.status(400).json({
         success: false,
         message: "Email and password are required",
       });
-
     }
 
+    // find user
+    const user = await User.findOne({ email });
 
-
-
-
-
-
-    // ===============================
-    // FIND USER
-    // ===============================
-    const user =
-      await User.findOne({ email });
-
-
-
-
-
-
-
-    // ===============================
-    // USER NOT FOUND
-    // ===============================
+    // user not found
     if (!user) {
-
       return res.status(400).json({
         success: false,
         message: "Invalid email or password",
       });
-
     }
 
+    // password check
+    const isMatch = await bcrypt.compare(
+      password,
+      user.password
+    );
 
-
-
-
-
-
-
-    // ===============================
-    // PASSWORD MATCH CHECK
-    // ===============================
-    const isMatch =
-      await bcrypt.compare(
-        password,
-        user.password
-      );
-
-
-
-
-
-
-
-    // ===============================
-    // WRONG PASSWORD
-    // ===============================
+    // wrong password
     if (!isMatch) {
-
       return res.status(400).json({
         success: false,
         message: "Invalid email or password",
       });
-
     }
 
-
-
-
-
-
-
-
-    // ===============================
-    // JWT TOKEN GENERATE
-    // ===============================
+    // generate jwt token
     const token = jwt.sign(
       {
         id: user._id,
-
-        // 🔥 ADD THESE
         name: user.name,
-
         email: user.email,
-
         photoURL: user.photoURL,
       },
-
       process.env.JWT_SECRET,
-
       {
         expiresIn: "7d",
       }
     );
 
-
-
-
-
-
-
-
-    // ===============================
-    // SAVE TOKEN IN COOKIE
-    // ===============================
+    // save token in cookie
     res.cookie("token", token, {
-
       httpOnly: true,
 
-      secure: false,
+      // 🔥 VERY IMPORTANT FOR VERCEL
+      secure: process.env.NODE_ENV === "production",
 
-      sameSite: "lax",
+      // 🔥 VERY IMPORTANT FOR FRONTEND + BACKEND DIFFERENT DOMAIN
+      sameSite:
+        process.env.NODE_ENV === "production"
+          ? "none"
+          : "lax",
 
-      maxAge:
-        7 * 24 * 60 * 60 * 1000,
-
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-
-
-
-
-
-
-
-    // ===============================
-    // SUCCESS RESPONSE
-    // ===============================
+    // success response
     res.status(200).json({
       success: true,
-
       message: "Login successful",
 
       user: {
         _id: user._id,
-
         name: user.name,
-
         email: user.email,
-
         photoURL: user.photoURL,
       },
     });
@@ -317,52 +158,28 @@ export const loginUser = async (req, res) => {
     });
 
   }
-
 };
-
-
-
-
-
-
-
-
-
-
-
 
 // ===============================
 // LOGOUT USER
 // ===============================
 export const logoutUser = async (req, res) => {
-
   try {
 
-
-
-
-    // ===============================
-    // CLEAR COOKIE
-    // ===============================
+    // clear cookie
     res.clearCookie("token", {
-
       httpOnly: true,
 
-      secure: false,
+      // 🔥 SAME SETTINGS MUST MATCH LOGIN COOKIE
+      secure: process.env.NODE_ENV === "production",
 
-      sameSite: "lax",
-
+      sameSite:
+        process.env.NODE_ENV === "production"
+          ? "none"
+          : "lax",
     });
 
-
-
-
-
-
-
-    // ===============================
-    // SUCCESS RESPONSE
-    // ===============================
+    // response
     res.status(200).json({
       success: true,
       message: "Logout successful",
@@ -376,5 +193,4 @@ export const logoutUser = async (req, res) => {
     });
 
   }
-
 };

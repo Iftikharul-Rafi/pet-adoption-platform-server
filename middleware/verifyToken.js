@@ -4,10 +4,10 @@ const verifyToken = (req, res, next) => {
 
   try {
 
-    // cookie থেকে token নিচ্ছি
+    // get token from cookies
     const token = req.cookies.token;
 
-    // token না থাকলে
+    // no token
     if (!token) {
       return res.status(401).json({
         success: false,
@@ -15,20 +15,22 @@ const verifyToken = (req, res, next) => {
       });
     }
 
-    // token verify
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    // verify token
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET
+    );
 
-    // user info request এ save
+    // save user info
     req.user = decoded;
 
-    // next middleware/function এ যাবে
     next();
 
   } catch (error) {
 
     return res.status(401).json({
       success: false,
-      message: "Invalid token",
+      message: "Invalid or expired token",
     });
 
   }
