@@ -83,4 +83,3 @@ const Pet = mongoose.model("Pet", petSchema);
 
 export default Pet;
 
-..
